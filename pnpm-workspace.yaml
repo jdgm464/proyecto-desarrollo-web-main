@@ -1,0 +1,24 @@
+packages:
+  - frontend
+  - backend
+  - packages/*
+
+catalog:
+  typescript: ^5.9.3
+  vite: npm:rolldown-vite@7.2.10
+  zod: ^4.1.13
+  nestjs-zod: ^5.0.1
+
+ignoredBuiltDependencies:
+  - "@nestjs/core"
+  - "@scarf/scarf"
+  - "@swc/core"
+  - "@vercel/speed-insights"
+  - esbuild
+  - unrs-resolver
+
+onlyBuiltDependencies:
+  - argon2
+
+overrides:
+  glob@^11.0.0: ^11.1.0
