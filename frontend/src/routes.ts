@@ -24,5 +24,9 @@ export default [
     route("dashboard", "./routes/private/dashboard.tsx"),
     route("config", "./routes/private/config.tsx"),
     route("prueba-dashboard", "./routes/private/prueba_dashboard/index.tsx"),
+    route(
+      "prueba-dashboard/solicitudes",
+      "./routes/private/prueba_dashboard/solicitudes.tsx",
+    ),
   ]),
 ] satisfies RouteConfig;
