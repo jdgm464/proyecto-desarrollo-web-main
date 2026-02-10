@@ -1,82 +1,69 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { 
-  Clock, 
-  CheckCircle2, 
-  XCircle, 
-  Calendar, 
-  MapPin, 
+import { apiClient } from "@/lib/api";
+import { DashboardStatsSchema } from "@uneg-lab/api-types/dashboard.js";
+import { ReservationSchema } from "@uneg-lab/api-types/reservation.js";
+import {
+  Calendar,
+  CheckCircle2,
+  Clock,
   Code,
-  User
+  FileDown,
+  MapPin,
+  User,
+  XCircle,
 } from "lucide-react";
 import { useState } from "react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Await, Link, useLoaderData } from "react-router";
 
-// Datos mock para las estadísticas
-const stats = {
-  pendientes: 12,
-  aprobadas: 60,
-  rechazadas: 5,
-  total: 77,
-};
+const LIMIT_PREVIEW = 8;
 
-// Datos mock para las reservas
-const reservas = [
-  {
-    id: 1,
-    profesor: "Prof. Carlos Jiménez",
-    curso: "Programación I",
-    ubicacion: "Laboratorio de Computación",
-    fechaInicio: "15/09/2025",
-    fechaFin: "20/12/2025",
-    horaInicio: "8:00",
-    horaFin: "10:00",
-    estado: "Pendiente",
-  },
-  {
-    id: 2,
-    profesor: "Prof. Sandra Martínez",
-    curso: "Física II",
-    ubicacion: "Laboratorio de Computación",
-    fechaInicio: "18/09/2025",
-    fechaFin: "22/12/2025",
-    horaInicio: "14:00",
-    horaFin: "16:00",
-    estado: "Pendiente",
-  },
-  {
-    id: 3,
-    profesor: "Prof. Juan Rodríguez",
-    curso: "Programación I",
-    ubicacion: "Laboratorio de Computación",
-    fechaInicio: "20/09/2025",
-    fechaFin: "25/12/2025",
-    horaInicio: "10:00",
-    horaFin: "12:00",
-    estado: "Pendiente",
-  },
-  {
-    id: 4,
-    profesor: "Prof. Marta Coro",
-    curso: "Física II",
-    ubicacion: "Laboratorio de Computación",
-    fechaInicio: "22/09/2025",
-    fechaFin: "27/12/2025",
-    horaInicio: "16:00",
-    horaFin: "18:00",
-    estado: "Pendiente",
-  },
-];
+export async function clientLoader({
+  request: { signal },
+}: {
+  request: { signal: AbortSignal };
+}) {
+  return {
+    stats: apiClient
+      .get("dashboard/stats", { signal })
+      .json()
+      .then(DashboardStatsSchema.parse),
+    reservas: apiClient
+      .get(`dashboard/reservations?page=1&limit=${LIMIT_PREVIEW}`, { signal })
+      .json()
+      .then((r: { data: unknown[] }) =>
+        r.data.map((x) => ReservationSchema.parse(x)),
+      ),
+  };
+}
 
 export default function PruebaDashboard() {
-  const [activeTab, setActiveTab] = useState<"todas" | "semestral" | "evento" | "especial">("todas");
+  const loaderData = useLoaderData() as {
+    stats: Promise<{ pendientes: number; aprobadas: number; rechazadas: number; canceladas: number; total: number }>;
+    reservas: Promise<Array<{ id: number; nombre: string; fecha: string; estado: string; descripcion: string }>>;
+  };
+  const [activeTab, setActiveTab] = useState<
+    "todas" | "clase" | "evento" | "mantenimiento"
+  >("todas");
   const [filterEstado, setFilterEstado] = useState<string>("todos");
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <header className="flex h-14 items-center justify-between border-b bg-[#1e293b] px-4 text-white">
         <h1 className="text-lg font-semibold">Dashboard principal</h1>
         <div className="flex items-center gap-3">
@@ -87,9 +74,7 @@ export default function PruebaDashboard() {
         </div>
       </header>
 
-      {/* Main Content */}
       <main className="space-y-6 p-6">
-        {/* Title Section */}
         <div>
           <h2 className="text-3xl font-bold">Panel de Administración</h2>
           <p className="text-muted-foreground mt-1 text-sm">
@@ -97,82 +82,123 @@ export default function PruebaDashboard() {
           </p>
         </div>
 
-        {/* Statistics Cards */}
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Card>
-            <CardContent className="flex items-center gap-4 p-6">
-              <div className="flex size-12 items-center justify-center rounded-lg bg-orange-100">
-                <Clock className="size-6 text-orange-600" />
-              </div>
-              <div>
-                <p className="text-muted-foreground text-sm">Pendientes</p>
-                <p className="text-2xl font-bold">{stats.pendientes}</p>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="flex items-center gap-4 p-6">
-              <div className="flex size-12 items-center justify-center rounded-lg bg-green-100">
-                <CheckCircle2 className="size-6 text-green-600" />
-              </div>
-              <div>
-                <p className="text-muted-foreground text-sm">Aprobadas</p>
-                <p className="text-2xl font-bold">{stats.aprobadas}</p>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="flex items-center gap-4 p-6">
-              <div className="flex size-12 items-center justify-center rounded-lg bg-pink-100">
-                <XCircle className="size-6 text-pink-600" />
-              </div>
-              <div>
-                <p className="text-muted-foreground text-sm">Rechazadas</p>
-                <p className="text-2xl font-bold">{stats.rechazadas}</p>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="flex items-center gap-4 p-6">
-              <div className="flex size-12 items-center justify-center rounded-lg bg-blue-100">
-                <Calendar className="size-6 text-blue-600" />
-              </div>
-              <div>
-                <p className="text-muted-foreground text-sm">Total</p>
-                <p className="text-2xl font-bold">{stats.total}</p>
-              </div>
-            </CardContent>
-          </Card>
+        {/* Statistics Cards - 5 cards: Pendientes, Aprobadas, Rechazadas, Canceladas, Total */}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+          <Await resolve={loaderData.stats}>
+            {(stats) => (
+              <>
+                <Card>
+                  <CardContent className="flex items-center gap-4 p-6">
+                    <div className="flex size-12 items-center justify-center rounded-lg bg-orange-100">
+                      <Clock className="size-6 text-orange-600" />
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground text-sm">Pendientes</p>
+                      <p className="text-2xl font-bold">{stats.pendientes}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="flex items-center gap-4 p-6">
+                    <div className="flex size-12 items-center justify-center rounded-lg bg-green-100">
+                      <CheckCircle2 className="size-6 text-green-600" />
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground text-sm">Aprobadas</p>
+                      <p className="text-2xl font-bold">{stats.aprobadas}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="flex items-center gap-4 p-6">
+                    <div className="flex size-12 items-center justify-center rounded-lg bg-red-100">
+                      <XCircle className="size-6 text-red-600" />
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground text-sm">Rechazadas</p>
+                      <p className="text-2xl font-bold">{stats.rechazadas}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="flex items-center gap-4 p-6">
+                    <div className="flex size-12 items-center justify-center rounded-lg bg-gray-100">
+                      <XCircle className="size-6 text-gray-600" />
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground text-sm">Canceladas</p>
+                      <p className="text-2xl font-bold">{stats.canceladas}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="flex items-center gap-4 p-6">
+                    <div className="flex size-12 items-center justify-center rounded-lg bg-blue-100">
+                      <Calendar className="size-6 text-blue-600" />
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground text-sm">Total</p>
+                      <p className="text-2xl font-bold">{stats.total}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </>
+            )}
+          </Await>
         </div>
 
-        {/* Reservation Management Section */}
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-4">
               <div>
                 <CardTitle>Gestión de Reservas</CardTitle>
                 <CardDescription>
-                  Revisa y aprueba las solicitudes de reserva
+                  Revisa y gestiona todas las solicitudes de reserva
                 </CardDescription>
               </div>
-              <Select value={filterEstado} onValueChange={setFilterEstado}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Todos los estados" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todos">Todos los estados</SelectItem>
-                  <SelectItem value="pendiente">Pendiente</SelectItem>
-                  <SelectItem value="aprobada">Aprobada</SelectItem>
-                  <SelectItem value="rechazada">Rechazada</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="flex items-center gap-2">
+                <Select
+                  value={filterEstado}
+                  onValueChange={setFilterEstado}
+                  disabled
+                >
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Todos los estados" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos los estados</SelectItem>
+                    <SelectItem value="Pendiente">Pendiente</SelectItem>
+                    <SelectItem value="Aprobada">Aprobada</SelectItem>
+                    <SelectItem value="Rechazada">Rechazada</SelectItem>
+                    <SelectItem value="Cancelada">Cancelada</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={async () => {
+                    try {
+                      const blob = await apiClient
+                        .get("dashboard/pdf")
+                        .blob();
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement("a");
+                      a.href = url;
+                      a.download = "reservas-uneg.pdf";
+                      a.click();
+                      URL.revokeObjectURL(url);
+                    } catch {
+                      window.open("/api/dashboard/pdf", "_blank");
+                    }
+                  }}
+                >
+                  <FileDown className="size-4" />
+                  PDF
+                </Button>
+              </div>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* Tabs */}
             <ToggleGroup
               type="single"
               value={activeTab}
@@ -182,74 +208,89 @@ export default function PruebaDashboard() {
               variant="outline"
             >
               <ToggleGroupItem value="todas">Todas</ToggleGroupItem>
-              <ToggleGroupItem value="semestral">Semestral</ToggleGroupItem>
+              <ToggleGroupItem value="clase">Clase</ToggleGroupItem>
               <ToggleGroupItem value="evento">Evento</ToggleGroupItem>
-              <ToggleGroupItem value="especial">Especial</ToggleGroupItem>
+              <ToggleGroupItem value="mantenimiento">Mantenimiento</ToggleGroupItem>
             </ToggleGroup>
 
-            {/* Reservations List */}
             <div className="space-y-4">
-              {reservas.map((reserva) => (
-                <Card key={reserva.id} className="border">
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1 space-y-3">
-                        <div className="flex items-center gap-2">
-                          <User className="size-4 text-muted-foreground" />
-                          <span className="font-semibold">{reserva.profesor}</span>
-                        </div>
-                        <p className="text-sm text-muted-foreground">{reserva.curso}</p>
-                        
-                        <div className="flex flex-wrap gap-4 text-sm">
-                          <div className="flex items-center gap-2">
-                            <MapPin className="size-4 text-muted-foreground" />
-                            <span>{reserva.ubicacion}</span>
+              <Await resolve={loaderData.reservas}>
+                {(reservas) => (
+                  <>
+                    {reservas.slice(0, LIMIT_PREVIEW).map((reserva) => (
+                      <Card key={reserva.id} className="border">
+                        <CardContent className="p-4">
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="flex-1 space-y-2">
+                              <div className="flex items-center gap-2">
+                                <User className="size-4 text-muted-foreground shrink-0" />
+                                <span className="font-semibold">
+                                  {reserva.nombre}
+                                </span>
+                              </div>
+                              <p className="text-sm text-muted-foreground line-clamp-2">
+                                {reserva.descripcion}
+                              </p>
+                              <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
+                                <span className="flex items-center gap-1">
+                                  <MapPin className="size-4 shrink-0" />
+                                  Sala de Computación - Villa Asia
+                                </span>
+                                <span className="flex items-center gap-1">
+                                  <Calendar className="size-4 shrink-0" />
+                                  {reserva.fecha}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2 pt-1">
+                                <Button variant="outline" size="sm" asChild>
+                                  <Link to={`/reservas/${reserva.id}`}>
+                                    Ver detalles
+                                  </Link>
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="size-8 rounded-full bg-green-100 text-green-600 hover:bg-green-200"
+                                  aria-label="Aprobar"
+                                >
+                                  <CheckCircle2 className="size-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="size-8 rounded-full bg-red-100 text-red-600 hover:bg-red-200"
+                                  aria-label="Rechazar"
+                                >
+                                  <XCircle className="size-4" />
+                                </Button>
+                              </div>
+                            </div>
+                            <Badge
+                              variant="outline"
+                              className={
+                                reserva.estado === "Pendiente"
+                                  ? "bg-orange-100 text-orange-700 border-orange-300 shrink-0"
+                                  : reserva.estado === "Aprobada"
+                                    ? "bg-green-100 text-green-700 border-green-300 shrink-0"
+                                    : "shrink-0"
+                              }
+                            >
+                              {reserva.estado.toUpperCase()}
+                            </Badge>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <Calendar className="size-4 text-muted-foreground" />
-                            <span>
-                              {reserva.fechaInicio} - {reserva.fechaFin}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Clock className="size-4 text-muted-foreground" />
-                            <span>
-                              {reserva.horaInicio} - {reserva.horaFin}
-                            </span>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                          <Button variant="outline" size="sm">
-                            Ver detalles
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="size-8 rounded-full bg-green-100 text-green-600 hover:bg-green-200"
-                          >
-                            <CheckCircle2 className="size-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="size-8 rounded-full bg-red-100 text-red-600 hover:bg-red-200"
-                          >
-                            <XCircle className="size-4" />
-                          </Button>
-                        </div>
-                      </div>
-                      
-                      <Badge 
-                        variant="outline" 
-                        className="bg-orange-100 text-orange-700 border-orange-300"
-                      >
-                        {reserva.estado}
-                      </Badge>
+                        </CardContent>
+                      </Card>
+                    ))}
+                    <div className="flex justify-center pt-2">
+                      <Button asChild variant="secondary">
+                        <Link to="/prueba-dashboard/solicitudes">
+                          Ver más detalles
+                        </Link>
+                      </Button>
                     </div>
-                  </CardContent>
-                </Card>
-              ))}
+                  </>
+                )}
+              </Await>
             </div>
           </CardContent>
         </Card>
@@ -257,4 +298,3 @@ export default function PruebaDashboard() {
     </div>
   );
 }
-
