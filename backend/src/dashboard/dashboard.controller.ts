@@ -3,6 +3,7 @@ import type { Response } from "express";
 import { Auth } from "../auth/decorators/auth.decorator.js";
 import { DashboardService } from "./dashboard.service.js";
 
+
 @Auth()
 @Controller("dashboard")
 export class DashboardController {
